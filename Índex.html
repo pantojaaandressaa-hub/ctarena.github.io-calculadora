@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>CT ARENA — Calculadora de Tempo</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#151f30;--muted:#aab6c8;--green:#20c879;--line:#2a3850}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,#101d2d,#080d16);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f7f9fc;min-height:100vh;padding:24px 16px calc(28px + env(safe-area-inset-bottom))}
+main{max-width:480px;margin:auto}
+.brand{text-align:center;padding:18px 8px 22px}
+.logo{font-size:34px;font-weight:900;letter-spacing:2px;color:var(--green)}
+.sub{font-size:12px;letter-spacing:2px;color:var(--muted);margin-top:5px}
+.card{background:rgba(21,31,48,.96);border:1px solid var(--line);border-radius:22px;padding:20px;margin:12px 0;box-shadow:0 12px 30px #0004}
+h2{font-size:16px;margin:0 0 14px}
+label{display:block;color:var(--muted);font-size:13px;margin:0 0 7px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{min-width:0}
+input{display:block;width:100%;min-width:0;height:52px;font-size:19px;color:white;background:#0c1523;border:1px solid #35445c;border-radius:12px;padding:10px 12px;outline:none;appearance:none;-webkit-appearance:none}
+input[type=time]{font-variant-numeric:tabular-nums}
+.results{display:grid;gap:14px}
+.result-label{color:var(--muted);font-size:13px}
+.result-value{font-size:29px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.green{color:var(--green)}
+.rule{height:1px;background:var(--line)}
+button{width:100%;padding:15px;border:1px solid #40516b;border-radius:13px;background:#202d41;color:#fff;font-size:15px;font-weight:700;margin-top:18px;cursor:pointer}
+button:active{transform:scale(.99)}
+.note{text-align:center;color:var(--muted);font-size:12px;line-height:1.6;margin:18px 6px}
+.hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+@media(max-width:360px){.card{padding:17px}.result-value{font-size:26px}.logo{font-size:30px}}
+</style>
+</head>
+<body>
+<main>
+  <header class="brand">
+    <div class="logo">CT ARENA</div>
+    <div class="sub">CALCULADORA DE TEMPO</div>
+  </header>
+
+  <section class="card">
+    <h2>1. Tempo de utilização</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="start">Início</label>
+        <input id="start" type="time" value="19:00" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="end">Final ou encerrado</label>
+        <input id="end" type="time" value="21:00" autocomplete="off">
+      </div>
+    </div>
+    <div class="hint">Informe o horário em que o jogo começou e o horário em que terminou.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Quantidade de jogadores</h2>
+    <label for="players">Número de jogadores</label>
+    <input id="players" type="number" min="1" step="1" value="4" inputmode="numeric">
+  </section>
+
+  <section class="card">
+    <h2>3. Resultado</h2>
+    <div class="results" aria-live="polite">
+      <div>
+        <div class="result-label">Tempo total de jogo</div>
+        <div class="result-value" id="duration">2h 00min</div>
+      </div>
+      <div class="rule"></div>
+      <div>
+        <div class="result-label">Valor total da quadra</div>
+        <div class="result-value green" id="total">R$ 100,00</div>
+      </div>
+      <div class="rule"></div>
+      <div>
+        <div class="result-label">Valor por jogador</div>
+        <div class="result-value" id="share">R$ 25,00</div>
+      </div>
+    </div>
+    <button id="reset" type="button">↻ Limpar calculadora</button>
+  </section>
+
+  <p class="note">CT ARENA • Cálculo rápido de tempo e divisão<br>Funcionamento: 17h às 00h • 5 quadras<br>Tarifa: R$ 25,00 por 30 minutos (R$ 50,00 por hora)</p>
+</main>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const money = value => value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+  function formatDuration(minutes){
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return `${hours}h ${String(rest).padStart(2,'0')}min`;
+  }
+
+  function calculate(){
+    const start = $('start').value;
+    const end = $('end').value;
+    const rawPlayers = $('players').value.trim();
+    const players = Math.floor(Number(rawPlayers));
+
+    if(!start || !end){
+      $('duration').textContent = '—';
+      $('total').textContent = '—';
+      $('share').textContent = '—';
+      return;
+    }
+
+    const [startHour,startMinute] = start.split(':').map(Number);
+    const [endHour,endMinute] = end.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+    let endMinutes = endHour * 60 + endMinute;
+    if(endMinutes < startMinutes) endMinutes += 24 * 60;
+
+    const playedMinutes = endMinutes - startMinutes;
+    if(playedMinutes <= 0){
+      $('duration').textContent = '—';
+      $('total').textContent = '—';
+      $('share').textContent = 'O horário final deve ser diferente do início';
+      return;
+    }
+
+    // Cobrança proporcional em blocos iniciados de 30 minutos.
+    const total = Math.ceil(playedMinutes / 30) * 25;
+    $('duration').textContent = formatDuration(playedMinutes);
+    $('total').textContent = money(total);
+    $('share').textContent = rawPlayers !== '' && Number.isFinite(players) && players > 0
+      ? money(total / players)
+      : 'Informe a quantidade de jogadores';
+  }
+
+  ['start','end','players'].forEach(id => {
+    $(id).addEventListener('input', calculate);
+    $(id).addEventListener('change', calculate);
+  });
+
+  $('reset').addEventListener('click', function(){
+    $('start').value = '19:00';
+    $('end').value = '21:00';
+    $('players').value = '4';
+    calculate();
+  });
+
+  calculate();
+})();
+</script>
+</body>
+</html>
